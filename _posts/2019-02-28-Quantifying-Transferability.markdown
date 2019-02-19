@@ -45,25 +45,29 @@ Note: the ball's inertia tensor (e.g., solid or hollow sphere) does have an infl
 
 After deciding on which domain parameters we want to randomize, we must decide how to do this. Possible approaches are:
 
-1. Sampling domain parameters from static probability distributions.  
-   This approach is the most widely used of the listed. The common element of ... is that every domain parameter is randomized according to a specified distribution, e.g. a uniform distribution around the nominal value. It is also possible to randomize
-   Examples of this randomization strategy are the work by [OpenAI], , and [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf)
+1. **Sampling domain parameters from static probability distributions**  
+   This approach is the most widely used of the listed. The common element between the different algorithms is that every domain parameter is randomized according to a specified distribution.
+   For example, the mechanical parts of a robot or the objects it should interact with have manufacturing tolerances, which can be used as a basis for designing the distributions.  
+   This sampling method is advantageous since it does not need any real-world samples, and the hyper-parameters (i.e., the parameters of the probability distributions) are easy to interpret. On the downside, at the current state-of-the-art the hyper-parameter selection done by the researcher is rather time-intensive.
+   Examples of this randomization strategy are for example the work by [OpenAI](https://arxiv.org/pdf/1808.00177.pdf),
+   [Rajeswaran et al.](https://arxiv.org/pdf/1610.01283.pdf),
+   and [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf)
 
-2. Sampling domain parameters from adaptive probability distributions.  
+2. **Sampling domain parameters from adaptive probability distributions**  
    [Chebotar et al.](https://arxiv.org/pdf/1810.05687.pdf) presented a very promising method on how to close the sim-2-real loop by adapting the distributions from which the domain parameters are sampled depending on results from real-world rollouts.
    The main advantage is, that this approach alleviates the need for hand-tuning the distributions of the domain parameters, which is currently a significant part of the hyper-parameter search. On the other side, the adaptation requires 
    For this reason, we will only focus on methods that sample from static probability distributions.
 
-3. Applying adversarial perturbations.  
+3. **Applying adversarial perturbations**  
    One could argue that technically these approaches do not fit the domain randomization category, since the perturbations are not necessarily random. However, I think this concept is an interesting compliment to the previously mentioned sampling methods. In particular, I want to highlight the following two ideas.
    [Mandlekar et al.](http://vision.stanford.edu/pdf/mandlekar2017iros.pdf) proposed physically plausible perturbations of the domain parameters by randomly deciding (Bernoulli experiment) when to add a rescaled gradient of the expected return w.r.t. the domain parameters. Therefore, the proposed algorithm requires a differentiable physics simulator.
    [Pinto et al.](https://arxiv.org/pdf/1703.02702.pdf) suggested to add a antagonist agent whose goal is to hinder the protagonist agent (the policy to be trained) from fulfilling its task. Both agents are trained simultaneously and make up a zero-sum game.  
-   In general, adversarial approaches may provide a particularly robust policy.  However, without any further restrictions,it is always possible create scenarios in which the protagonist agent can never win, i.e., the policy will not learn the task.
+   In general, adversarial approaches may provide a particularly robust policy.  However, without any further restrictions, it is always possible create scenarios in which the protagonist agent can never win, i.e., the policy will not learn the task.
 
 > Interestingly, all publications I have read so far randomize the _domain parameters_ in a per-episode fashion, i.e., once at the beginning of every rollout (excluding the adversarial approaches mentioned in the list above). Alternatively, one could randomize the parameters every time step.
 I see two reasons, why the community so far only randomizes once per rollout. First, it is harder to implement from the physics engine point of view. Second, the very frequent parameter changes are most likely detrimental to learning, because the resulting dynamics would become significantly nosier.
 
-## Quantifying the Transferability
+## Quantifying the Transferability During Learning
 
 Frame reinforcement learning problem as a _stochastic program_ (SP).
 $$
@@ -106,7 +110,10 @@ Simulation-based PolicyOptimization with Transferability Assessment (SPOTA) [Mur
 
 
 ### SPOTA &mdash; Sim-2-Sim Results 
-Preliminary results on transferring policies trained with SPOTA from one simulation to another have been reported in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf).
+Preliminary results on transferring policies trained with SPOTA from one simulation to another have been reported in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf). The videos below show the performance in example scenarios side-by-side with **3 baselines**:
+* **EPOpt** by [Rajeswaran et al.](https://arxiv.org/pdf/1610.01283.pdf) which is a domain ranomization algorithm that maximizes the [conditional value at risk](https://en.wikipedia.org/wiki/Expected_shortfall) of the expected discounted return
+* **TRPO** without domain randomization (implementation from [Duan et al](https://arxiv.org/pdf/1604.06778.pdf)) 
+* **LQR** applying optimal control for the system linearized around the goal state (an equilibrium)
 
 <center>
 <iframe width="50%" src="https://www.youtube.com/watch?v=RQ7zq_bcv_k" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -129,4 +136,4 @@ I want to thank Ankur Handa for proofreading and editing this post.
 
 ## Credits
 
-Figure Josh Tobin
+First figure with permission from Josh Tobin
