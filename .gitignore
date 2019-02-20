@@ -1,0 +1,6 @@
+# Ignore folders
+_site/
+.vscode/
+
+# Ignore files
+Gemfile.lock
