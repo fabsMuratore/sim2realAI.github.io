@@ -15,7 +15,7 @@ Therefore, simulation-based policy search appears to be an appealing alternative
 
 In general, learning from physics simulations introduces two major challenges:
 
-1. Physics engines (e.g., [Bullet](https://pybullet.org/wordpress/), [Vortex](https://www.cm-labs.com/vortex-studio/), or [MoJoCo](http://www.mujoco.org/)) are build on models, which are always an approximation of the real world and thus **inherently inaccurate**. For the same reason, there will always be **unmodeled effects**.
+1. Physics engines (e.g., [Bullet](https://pybullet.org/wordpress/), [MoJoCo](http://www.mujoco.org/), or [Vortex](https://www.cm-labs.com/vortex-studio/)]) are build on models, which are always an approximation of the real world and thus **inherently inaccurate**. For the same reason, there will always be **unmodeled effects**.
 
 2. Sample-based optimization (e.g., reinforcement learning) is known to be **optimistically biased**. This means, that the optimizer will over-fit to the provided samples, i.e., optimize for the simulation and not for the real problem, which the one we actually want to solve.
 
@@ -34,6 +34,7 @@ Loosely speaking, randomizing the physics parameters can be interpreted as anoth
 ### What to Randomize?
 
 A lot of research in the sim-2-real field has been focused on randomizing visual features (e.g., textures, camera properties, or lighting). Examples are the work of [Tobin et al.](https://arxiv.org/pdf/1703.06907.pdf), who trained an object detector for robot grasping (see figure), or the research done by [Sadeghi and Levine](https://arxiv.org/pdf/1611.04201.pdf), where a drone learned to fly from experience gathered in visually randomized environments.
+
 <img align="right" src="/assets/img/2019-02-28/Tobin_etal_2018_Fig1.jpg" width="30%">
 
 In this blog post, we focus on the randomization of physics parameters (e.g., masses, centers of mass, friction coefficients, or actuator delays), which change the dynamics of the system at hand.
@@ -60,7 +61,7 @@ After deciding on which domain parameters we want to randomize, we must decide h
 
 3. **Applying adversarial perturbations**  
    One could argue that technically these approaches do not fit the domain randomization category, since the perturbations are not necessarily random. However, I think this concept is an interesting compliment to the previously mentioned sampling methods. In particular, I want to highlight the following two ideas.
-   [Mandlekar et al.](http://vision.stanford.edu/pdf/mandlekar2017iros.pdf) proposed physically plausible perturbations of the domain parameters by randomly deciding (Bernoulli experiment) when to add a rescaled gradient of the expected return w.r.t. the domain parameters. Therefore, the proposed algorithm requires a differentiable physics simulator.
+   [Mandlekar et al.](http://vision.stanford.edu/pdf/mandlekar2017iros.pdf) proposed physically plausible perturbations of the domain parameters by randomly deciding (Bernoulli experiment) when to add a rescaled gradient of the expected return w.r.t. the domain parameters. Moreover,the paper includes an ablation analysis on the effect of adding noise to the domain parameters or directly to the states.
    [Pinto et al.](https://arxiv.org/pdf/1703.02702.pdf) suggested to add a antagonist agent whose goal is to hinder the protagonist agent (the policy to be trained) from fulfilling its task. Both agents are trained simultaneously and make up a zero-sum game.  
    In general, adversarial approaches may provide a particularly robust policy.  However, without any further restrictions, it is always possible create scenarios in which the protagonist agent can never win, i.e., the policy will not learn the task.
 
@@ -69,50 +70,59 @@ I see two reasons, why the community so far only randomizes once per rollout. Fi
 
 ## Quantifying the Transferability During Learning
 
-Frame reinforcement learning problem as a _stochastic program_ (SP).
+[Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf) presented an algorithm called Simulation-based PolicyOptimization with Transferability Assessment (SPOTA) which is able to directly transfer from an ensemble of source domains to an unseen target domain. The goal of SPOTA is not only to maximize the agent's expected discounted return under the influence of perturbed physics simulations, but also to provide an approximate probabilistic guarantee on the loss in terms of expected discounted return when applying the found policy $\pi(\theta)$ to a different domain.
+
+We start by framing reinforcement learning problem as a _stochastic program_, i.e., maximizing the expectation of estimated discounted return $J(\theta)$ over the domain parameters $\xi \sim p(\xi; \psi)$, where $\psi$ are the parameters of the distribution
 $$
-    \xi \sim p(\xi; \psi)\\
-    J(\theta^{\star}) = \max_{\theta \in \Theta} \mathbb{E}_\xi \left[J(\theta, \xi) \right]
+    J(\theta^{\star}) = \max_{\theta \in \Theta} \mathbb{E}_\xi \left[J(\theta, \xi) \right].
+$$
+Since it is intractable to compute the expectation over all domains, we approximate the stochastic program using $n$ samples
+$$
+    \hat{J}_n(\theta^{\star}_n) = \max_{\theta \in \Theta} \frac{1}{n}\sum_{i=1}^{n} J(\theta, \xi_i).
 $$
 
-approximated
+It has been shown under mild assumptions, which are fulfilled in the reinforcement leaning setting, that [sample-based optimization is optimistically biased](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/WR025i002p00152), i.e., the solution is guaranteed to degrade in terms of performance when transformed to the real system.
+This loss in performance can be expressed by the _Simulation Optimization Bias_ (SOB)
 $$
-    \hat{J}_n(\theta^{\star}_n) = \max_{\theta \in \Theta} \frac{1}{n}\sum_{i=1}^{n} J(\theta, \xi_i)
-$$
-
-_Simulation Optimization Bias_ (SOB)
-$$
-    b[\hat{J}_n] =
+    b\left[ \hat{J}_n(\theta^{\star}_n) \right] =
     \underbrace{
         \mathbb{E}_\xi \left[ \max_{\hat{\theta} \in \Theta} \frac{1}{n}\sum_{i=1}^{n} J(\hat{\theta}, \xi_i) \right]
     }_{\text{optimal value for samples}}
     -
     \underbrace{
-        \max_{\theta \in \Theta} \mathbb{E}_\xi \left[ \frac{1}{n}\sum_{i=1}^{n} J(\theta, \xi_i) \right]
+        \max_{\theta \in \Theta} \mathbb{E}_\xi \left[ J(\theta, \xi) \right]
     }_{\text{true optimal value}}
     \ge 0
 $$
-
-_Optimality Gap_ (OG) at the candidate solution $\theta^c$
+Unfortunately, this quantity can not be used as an objective function, because we can not compute the expectation in the minuend, and we do not know the optimal policy parameters for the real system $\theta^\star$ in the subtrahend.  
+Inspired by the work of [Mak et al.](https://ac.els-cdn.com/S0167637798000546/1-s2.0-S0167637798000546-main.pdf?_tid=8f5399ae-fda8-41f9-b499-5991d943237c&acdnat=1550665775_b5dfa73c82228c19975ebbc882d775a7) on accessing the solution quality of convex stochastic problems, we employ the _Optimality Gap_ (OG) at the candidate solution $\theta^c$
 $$
     G(\theta^c) =
     \underbrace{\max_{\theta \in \Theta} \mathbb{E}_\xi \left[J(\theta, \xi) \right]}_{\text{best solution's value}} -
     \underbrace{\mathbb{E}_\xi \left[J(\theta^c, \xi) \right]}_{\text{candidate solution's value}}
     \ge 0
 $$
-
-Estimated OG
+to quantify how much our solution $\theta^c$, e.g. yielded by a policy search algorithm, is worse than the best solution the algorithm could have found (in simulation).
+However, $G(\theta^c)$ also includes an expectation over all domains. Thus, we have to approximate it from samples.
+Using $n$ domains, the estimated OG at our candidate solution is
 $$
-    G_n(\theta^c) = \max_{\theta\in\Theta} \hat{J}_n(\theta) - \hat{J}_n(\theta^c) \ge G(\theta^c)
+    \hat{G}_n(\theta^c) = \max_{\theta\in\Theta} \hat{J}_n(\theta) - \hat{J}_n(\theta^c) \ge G(\theta^c).
+$$
+In SPOTA, an upper confidence bound on $\hat{G}_n(\theta^c)$ is used to give a probabilistic guarantee on the transferability of the policy learned in simulation. Essentially, the algorithm increases the number of domains for every iteration until the policy's upper confidence bound on the estimated OG is lower than a given threshold.  
+The question now is, if this property actually contributes to our goal of obtaining a low SOB.
+
+Finally, relation between OG and SOB
+$$
+    b\left[ \hat{J}_n(\theta^{\star}_n) \right] = \mathbb{E}_\xi \left[ \hat{G}_n(\theta^c) \right]- G(\theta^c)
 $$
 
-Simulation-based PolicyOptimization with Transferability Assessment (SPOTA) [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf)
-
+> Please note, that the definitions used in this section deviate sightly from the ones used in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf).
 
 ### SPOTA &mdash; Sim-2-Sim Results 
 Preliminary results on transferring policies trained with SPOTA from one simulation to another have been reported in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf). The videos below show the performance in example scenarios side-by-side with **3 baselines**:
+
 * **EPOpt** by [Rajeswaran et al.](https://arxiv.org/pdf/1610.01283.pdf) which is a domain ranomization algorithm that maximizes the [conditional value at risk](https://en.wikipedia.org/wiki/Expected_shortfall) of the expected discounted return
-* **TRPO** without domain randomization (implementation from [Duan et al](https://arxiv.org/pdf/1604.06778.pdf)) 
+* **TRPO** without domain randomization (implementation from [Duan et al.](https://arxiv.org/pdf/1604.06778.pdf))
 * **LQR** applying optimal control for the system linearized around the goal state (an equilibrium)
 
 <center>
@@ -120,7 +130,7 @@ Preliminary results on transferring policies trained with SPOTA from one simulat
 <iframe width="50%" src="https://www.youtube.com/watch?v=ORi9sjhs_tw" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 </center>
 
-### SPOTA &mdash; Sim-2-Real Results 
+### SPOTA &mdash; Sim-2-Real Results
 
 ... TDA ...
 
@@ -130,9 +140,9 @@ Preliminary results on transferring policies trained with SPOTA from one simulat
 
 [Fabio Muratore](https://www.ias.informatik.tu-darmstadt.de/Team/FabioMuratore) &mdash; 	Intelligent Autonomous Systems, TU Darmstadt, Germany
 
-## Acknowledgements 
+## Acknowledgements
 
-I want to thank Ankur Handa for proofreading and editing this post. 
+I want to thank Ankur Handa for proofreading and editing this post.
 
 ## Credits
 
