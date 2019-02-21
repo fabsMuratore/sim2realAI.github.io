@@ -49,7 +49,7 @@ After deciding on which domain parameters we want to randomize, we must decide h
 1. **Sampling domain parameters from static probability distributions**  
    This approach is the most widely used of the listed. The common element between the different algorithms is that every domain parameter is randomized according to a specified distribution.
    For example, the mechanical parts of a robot or the objects it should interact with have manufacturing tolerances, which can be used as a basis for designing the distributions.  
-   This sampling method is advantageous since it does not need any real-world samples, and the hyper-parameters (i.e., the parameters of the probability distributions) are easy to interpret. On the downside, at the current state-of-the-art the hyper-parameter selection done by the researcher is rather time-intensive.
+   This sampling method is advantageous since it does not need any real-world samples, and the hyper-parameters (i.e., the parameters of the probability distributions) are easy to interpret. On the downside, the state-of-the-art hyper-parameter selection done by the researcher and can be potentially time-intensive.
    Examples of this randomization strategy are for example the work by [OpenAI](https://arxiv.org/pdf/1808.00177.pdf),
    [Rajeswaran et al.](https://arxiv.org/pdf/1610.01283.pdf),
    and [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf)
@@ -70,7 +70,10 @@ I see two reasons, why the community so far only randomizes once per rollout. Fi
 
 ## Quantifying the Transferability During Learning
 
-[Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf) presented an algorithm called Simulation-based PolicyOptimization with Transferability Assessment (SPOTA) which is able to directly transfer from an ensemble of source domains to an unseen target domain. The goal of SPOTA is not only to maximize the agent's expected discounted return under the influence of perturbed physics simulations, but also to provide an approximate probabilistic guarantee on the loss in terms of expected discounted return when applying the found policy $\pi(\theta)$ to a different domain.
+In the state-of-the-art of sim-2-real reinforcement learning, there are several algorithms that learn (robust) continuous control policies in simulation. Some of the already showed the ability to transfer from simulation to reality.
+But all of these algorithms lack a measure of the policy's transferability and thus they just train for a given number of rollouts or transitions. Usually, this problem is bypassed by training for a "very long time" and then testing the resulting policy on the real system. If the performance is not satisfactory, the procedure is repeated.
+
+[Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf) presented an algorithm called Simulation-based PolicyOptimization with Transferability Assessment (SPOTA) which is able to directly transfer from an ensemble of source domains to an unseen target domain. The goal of SPOTA is not only to maximize the agent's expected discounted return under the influence of perturbed physics simulations, but also to provide an approximate probabilistic guarantee on the loss in terms of this performance mueasure when applying the found policy $\pi(\theta)$ to a different domain.
 
 We start by framing reinforcement learning problem as a _stochastic program_, i.e., maximizing the expectation of estimated discounted return $J(\theta)$ over the domain parameters $\xi \sim p(\xi; \psi)$, where $\psi$ are the parameters of the distribution
 $$
@@ -84,7 +87,7 @@ $$
 It has been shown under mild assumptions, which are fulfilled in the reinforcement leaning setting, that [sample-based optimization is optimistically biased](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/WR025i002p00152), i.e., the solution is guaranteed to degrade in terms of performance when transformed to the real system.
 This loss in performance can be expressed by the _Simulation Optimization Bias_ (SOB)
 $$
-    b\left[ \hat{J}_n(\theta^{\star}_n) \right] =
+    \mathrm{b}\left[ \hat{J}_n(\theta^{\star}_n) \right] =
     \underbrace{
         \mathbb{E}_\xi \left[ \max_{\hat{\theta} \in \Theta} \frac{1}{n}\sum_{i=1}^{n} J(\hat{\theta}, \xi_i) \right]
     }_{\text{optimal value for samples}}
@@ -92,31 +95,34 @@ $$
     \underbrace{
         \max_{\theta \in \Theta} \mathbb{E}_\xi \left[ J(\theta, \xi) \right]
     }_{\text{true optimal value}}
-    \ge 0
+    \ge 0.
 $$
-Unfortunately, this quantity can not be used as an objective function, because we can not compute the expectation in the minuend, and we do not know the optimal policy parameters for the real system $\theta^\star$ in the subtrahend.  
-Inspired by the work of [Mak et al.](https://ac.els-cdn.com/S0167637798000546/1-s2.0-S0167637798000546-main.pdf?_tid=8f5399ae-fda8-41f9-b499-5991d943237c&acdnat=1550665775_b5dfa73c82228c19975ebbc882d775a7) on accessing the solution quality of convex stochastic problems, we employ the _Optimality Gap_ (OG) at the candidate solution $\theta^c$
+Unfortunately, this quantity can not be used right away as an objective function, because we can not compute the expectation in the minuend, and we do not know the optimal policy parameters for the real system $\theta^\star$ in the subtrahend.  
+Inspired by the work of [Mak et al.](https://ac.els-cdn.com/S0167637798000546/1-s2.0-S0167637798000546-main.pdf?_tid=8f5399ae-fda8-41f9-b499-5991d943237c&acdnat=1550665775_b5dfa73c82228c19975ebbc882d775a7) on assessing the solution quality of convex stochastic problems, we employ the _Optimality Gap_ (OG) at the candidate solution $\theta^c$
 $$
     G(\theta^c) =
     \underbrace{\max_{\theta \in \Theta} \mathbb{E}_\xi \left[J(\theta, \xi) \right]}_{\text{best solution's value}} -
     \underbrace{\mathbb{E}_\xi \left[J(\theta^c, \xi) \right]}_{\text{candidate solution's value}}
     \ge 0
 $$
-to quantify how much our solution $\theta^c$, e.g. yielded by a policy search algorithm, is worse than the best solution the algorithm could have found (in simulation).
-However, $G(\theta^c)$ also includes an expectation over all domains. Thus, we have to approximate it from samples.
-Using $n$ domains, the estimated OG at our candidate solution is
+to quantify how much our solution $\theta^c$, e.g. yielded by a policy search algorithm, is worse than the best solution the algorithm could have found. In general, this measure is agnostic to the fact if we are evaluating the policies in simulation or reality. Since we are discussing the sim-2-real setting, think of OG as a quantification of our solutions suboptimality in simulation.  
+However, $G(\theta^c)$ also includes an expectation over all domains. Thus, we have to approximate it from samples. Using $n$ domains, the estimated OG at our candidate solution is
 $$
     \hat{G}_n(\theta^c) = \max_{\theta\in\Theta} \hat{J}_n(\theta) - \hat{J}_n(\theta^c) \ge G(\theta^c).
 $$
-In SPOTA, an upper confidence bound on $\hat{G}_n(\theta^c)$ is used to give a probabilistic guarantee on the transferability of the policy learned in simulation. Essentially, the algorithm increases the number of domains for every iteration until the policy's upper confidence bound on the estimated OG is lower than a given threshold.  
-The question now is, if this property actually contributes to our goal of obtaining a low SOB.
+In SPOTA, an upper confidence bound on $\hat{G}_n(\theta^c)$ is used to give a probabilistic guarantee on the transferability of the policy learned in simulation. So, the results is a policy that with probability $X$ does not lose more than $Y$ in terms of return when transferred from one domain to a different domain of the same source distribution $p(\xi; \psi)$.  
+Essentially, SPOTA increases the number of domains for every iteration until the policy's upper confidence bound on the estimated OG is lower than the desired threshold $Y$.  
 
-Finally, relation between OG and SOB
+Let's assume everything worked out fine and we trained a policy from randomized simulations such that the upper confidence bound on $\hat{G}_n(\theta^c)$ was reduced below the desired threshold.
+Now, the key question is if this property actually contributes to our goal of obtaining a low Simulation Optimization Bias (SOB).  
+The relation between the OG and and the SOB can be written as
 $$
-    b\left[ \hat{J}_n(\theta^{\star}_n) \right] = \mathbb{E}_\xi \left[ \hat{G}_n(\theta^c) \right]- G(\theta^c)
+    \mathrm{b}\left[ \hat{J}_n(\theta^{\star}_n) \right] = \mathbb{E}_\xi \left[ \hat{G}_n(\theta^c) \right]- G(\theta^c)
 $$
+where in this case the evaluation is performed in the real world.<!-- where in this case $G(\theta^c)$ is evaluated in the real world. -->
+Therefore, lowering the upper confidence bound on the estimated OG $\hat{G}_n(\theta^c)$ contributes to lowering the SOB $\mathrm{b}\left[ \hat{J}_n(\theta^{\star}_n) \right]$.
 
-> Please note, that the definitions used in this section deviate sightly from the ones used in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf).
+> Please note, that the terminology used in this post deviates sightly from the one used in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf).
 
 ### SPOTA &mdash; Sim-2-Sim Results 
 Preliminary results on transferring policies trained with SPOTA from one simulation to another have been reported in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf). The videos below show the performance in example scenarios side-by-side with **3 baselines**:
