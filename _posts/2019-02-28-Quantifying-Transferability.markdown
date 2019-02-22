@@ -60,7 +60,7 @@ After deciding on which domain parameters we want to randomize, we must decide h
    For this reason, we will only focus on methods that sample from static probability distributions.
 
 3. **Applying adversarial perturbations**  
-   One could argue that technically these approaches do not fit the domain randomization category, since the perturbations are not necessarily random. However, I think this concept is an interesting compliment to the previously mentioned sampling methods. In particular, I want to highlight the following two ideas.
+   One could argue that technically these approaches do not fit the domain randomization category, since the perturbations are not necessarily random. Nonetheless, I think this concept is an interesting compliment to the previously mentioned sampling methods. In particular, I want to highlight the following two ideas.
    [Mandlekar et al.](http://vision.stanford.edu/pdf/mandlekar2017iros.pdf) proposed physically plausible perturbations of the domain parameters by randomly deciding (Bernoulli experiment) when to add a rescaled gradient of the expected return w.r.t. the domain parameters. Moreover,the paper includes an ablation analysis on the effect of adding noise to the domain parameters or directly to the states.
    [Pinto et al.](https://arxiv.org/pdf/1703.02702.pdf) suggested to add a antagonist agent whose goal is to hinder the protagonist agent (the policy to be trained) from fulfilling its task. Both agents are trained simultaneously and make up a zero-sum game.  
    In general, adversarial approaches may provide a particularly robust policy.  However, without any further restrictions, it is always possible create scenarios in which the protagonist agent can never win, i.e., the policy will not learn the task.
@@ -70,10 +70,10 @@ I see two reasons, why the community so far only randomizes once per rollout. Fi
 
 ## Quantifying the Transferability During Learning
 
-In the state-of-the-art of sim-2-real reinforcement learning, there are several algorithms that learn (robust) continuous control policies in simulation. Some of the already showed the ability to transfer from simulation to reality.
-But all of these algorithms lack a measure of the policy's transferability and thus they just train for a given number of rollouts or transitions. Usually, this problem is bypassed by training for a "very long time" and then testing the resulting policy on the real system. If the performance is not satisfactory, the procedure is repeated.
+In the state-of-the-art of sim-2-real reinforcement learning, there are several algorithms which learn (robust) continuous control policies in simulation. Some of them already showed the ability to transfer from simulation to reality.
+However, all of these algorithms lack a measure of the policy's transferability and thus they just train for a given number of rollouts or transitions. Usually, this problem is bypassed by training for a "very long time" (i.e., using a "huge amount" of samples) and then testing the resulting policy on the real system. If the performance is not satisfactory, the procedure is repeated.
 
-[Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf) presented an algorithm called Simulation-based PolicyOptimization with Transferability Assessment (SPOTA) which is able to directly transfer from an ensemble of source domains to an unseen target domain. The goal of SPOTA is not only to maximize the agent's expected discounted return under the influence of perturbed physics simulations, but also to provide an approximate probabilistic guarantee on the loss in terms of this performance mueasure when applying the found policy $\pi(\theta)$ to a different domain.
+[Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf) presented an algorithm called Simulation-based PolicyOptimization with Transferability Assessment (SPOTA) which is able to directly transfer from an ensemble of source domains to an unseen target domain. The goal of SPOTA is not only to maximize the agent's expected discounted return under the influence of perturbed physics simulations, but also to provide an approximate probabilistic guarantee on the loss in terms of this performance mueasure when applying the found policy $\pi(\theta)$, a mapping from states to actions, to a different domain.
 
 We start by framing reinforcement learning problem as a _stochastic program_, i.e., maximizing the expectation of estimated discounted return $J(\theta)$ over the domain parameters $\xi \sim p(\xi; \psi)$, where $\psi$ are the parameters of the distribution
 $$
@@ -97,6 +97,10 @@ $$
     }_{\text{true optimal value}}
     \ge 0.
 $$
+The figure below qualitatively displays the SOB between the true optimum $J(\theta^\star)$ and the sample-based optimum $\hat{J}_n(\theta_n^\star)$. The shaded region visualizes the variance arising when approximating $J(\theta)$ with $n$ domains.
+
+<img align="right" src="/assets/img/2019-02-28/SOB_sketch.png" width="30%">
+
 Unfortunately, this quantity can not be used right away as an objective function, because we can not compute the expectation in the minuend, and we do not know the optimal policy parameters for the real system $\theta^\star$ in the subtrahend.  
 Inspired by the work of [Mak et al.](https://ac.els-cdn.com/S0167637798000546/1-s2.0-S0167637798000546-main.pdf?_tid=8f5399ae-fda8-41f9-b499-5991d943237c&acdnat=1550665775_b5dfa73c82228c19975ebbc882d775a7) on assessing the solution quality of convex stochastic problems, we employ the _Optimality Gap_ (OG) at the candidate solution $\theta^c$
 $$
@@ -106,7 +110,7 @@ $$
     \ge 0
 $$
 to quantify how much our solution $\theta^c$, e.g. yielded by a policy search algorithm, is worse than the best solution the algorithm could have found. In general, this measure is agnostic to the fact if we are evaluating the policies in simulation or reality. Since we are discussing the sim-2-real setting, think of OG as a quantification of our solutions suboptimality in simulation.  
-However, $G(\theta^c)$ also includes an expectation over all domains. Thus, we have to approximate it from samples. Using $n$ domains, the estimated OG at our candidate solution is
+However, computing $G(\theta^c)$ also includes an expectation over all domains. Thus, we have to approximate it from samples. Using $n$ domains, the estimated OG at our candidate solution is
 $$
     \hat{G}_n(\theta^c) = \max_{\theta\in\Theta} \hat{J}_n(\theta) - \hat{J}_n(\theta^c) \ge G(\theta^c).
 $$
