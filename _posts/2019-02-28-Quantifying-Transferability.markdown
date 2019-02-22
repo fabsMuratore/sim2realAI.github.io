@@ -48,13 +48,14 @@ Loosely speaking, randomizing the physics parameters can be interpreted as anoth
 
 ### What to Randomize
 
-<img align="right" src="/assets/img/2019-02-28/Tobin_etal_2018--sim2real.jpg" width="41%">
+<img align="right" src="/assets/img/2019-02-28/Tobin_etal_2018--sim2real.jpg" width="50%">
 
 A lot of research in the sim-2-real field has been focused on randomizing visual features (e.g., textures, camera properties, or lighting). Examples are the work of [Tobin et al.](https://arxiv.org/pdf/1703.06907.pdf), who trained an object detector for robot grasping (see figure), or the research done by [Sadeghi and Levine](https://arxiv.org/pdf/1611.04201.pdf), where a drone learned to fly from experience gathered in visually randomized environments.
 
 In this blog post, we focus on the randomization of physics parameters (e.g., masses, centers of mass, friction coefficients, or actuator delays), which change the dynamics of the system at hand.
 Depending on the simulation environment, **the influence of some parameters can be crucial, while other can be neglected**.
-> To illustrate this point, we consider a ball rolling downhill on a inclined plane. In this scenario, the ball's mass as well as radius do not influence how fast the ball is rolling. So, varying this parameters while learning would be a waste of computation time.  
+
+> To illustrate this point, we consider a ball rolling downhill on a inclined plane. In this scenario, the ball's mass as well as radius do not influence how fast the ball is rolling. So, varying this parameters while learning would be a waste of computation time.
 Note: the ball's inertia tensor (e.g., solid or hollow sphere) does have an influence.
 
 ### How to Randomize
@@ -70,9 +71,9 @@ After deciding on which domain parameters we want to randomize, we must decide h
    and [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf)
 
 2. **Sampling domain parameters from adaptive probability distributions**  
-   <img align="right" src="/assets/img/2019-02-28/Chebotar_etal_2018--adaptive_distr.png" width="42%">
-   [Chebotar et al.](https://arxiv.org/pdf/1810.05687.pdf) presented a very promising method on how to close the sim-2-real loop by adapting the distributions from which the domain parameters are sampled depending on results from real-world rollouts.
-   The main advantage is, that this approach alleviates the need for hand-tuning the distributions of the domain parameters, which is currently a significant part of the hyper-parameter search. On the other side, the adaptation requires 
+   <img align="right" src="/assets/img/2019-02-28/Chebotar_etal_2018--adaptive_distr.png" width="37%">
+   [Chebotar et al.](https://arxiv.org/pdf/1810.05687.pdf) presented a very promising method on how to close the sim-2-real loop by adapting the distributions from which the domain parameters are sampled depending on results from real-world rollouts (see figure).
+   The main advantage is, that this approach alleviates the need for hand-tuning the distributions of the domain parameters, which is currently a significant part of the hyper-parameter search. On the other side, the adaptation requires data from the real robot which expensive.
    For this reason, we will only focus on methods that sample from static probability distributions.
 
 3. **Applying adversarial perturbations**  
@@ -121,7 +122,7 @@ $$
 The figure below qualitatively displays the SOB between the true optimum $J(\theta^\star)$ and the sample-based optimum $\hat{J}_n(\theta_n^\star)$. The shaded region visualizes the variance arising when approximating $J(\theta)$ with $n$ domains.
 
 <center>
-<img src="/assets/img/2019-02-28/SOB_sketch.png" width="55%">
+<img src="/assets/img/2019-02-28/SOB_sketch.png" width="50%">
 </center>
 
 Unfortunately, this quantity can not be used right away as an objective function, because we can not compute the expectation in the minuend, and we do not know the optimal policy parameters for the real system $\theta^\star$ in the subtrahend.  
@@ -172,7 +173,7 @@ Preceding results on transferring policies trained with SPOTA from one simulatio
 
 ### SPOTA &mdash; Sim-2-Real Results
 
-... TDA ...
+... TBD ...
 
 ---
 
