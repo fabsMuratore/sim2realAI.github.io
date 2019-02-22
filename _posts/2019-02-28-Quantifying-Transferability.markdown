@@ -6,6 +6,21 @@ description: On the simulation optimization bias and the optimality gap in the c
 img:  # Add image post (optional)
 ---
 
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+      processEscapes: true
+    },
+    "HTML-CSS": { fonts: ["TeX"] }
+  });
+</script>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
 This post is about how we can quantitatively estimate the transferability of a control policies learned in a randomized simulation.
 
 Learning continuous control policies in the real world is expensive in terms of time (e.g., gathering the data) and resources (e.g., wear and tear on the robot).
@@ -31,7 +46,7 @@ A _domain_ is one instance of the simulator, i.e., a set of _domain parameters_ 
 Loosely speaking, randomizing the physics parameters can be interpreted as another way of injecting noise into the simulation while learning. In contrast to simply adding noise to the sensors and actors, this approach allows to selectively express the uncertainty on one phenomenon (e.g., rolling friction).  
 **The motivation of domain randomization in the context of learning from simulations** is the idea that if the learner has seen many variations of the domain, then the resulting policy will be more robust towards modeling uncertainties and errors. Furthermore, if the learned policy is able to maintain its performance across an ensemble of domains, it is more like to transferable to the real world.
 
-### What to Randomize?
+### What to Randomize
 
 <img align="right" src="/assets/img/2019-02-28/Tobin_etal_2018--sim2real.jpg" width="41%">
 
@@ -42,7 +57,7 @@ Depending on the simulation environment, **the influence of some parameters can 
 > To illustrate this point, we consider a ball rolling downhill on a inclined plane. In this scenario, the ball's mass as well as radius do not influence how fast the ball is rolling. So, varying this parameters while learning would be a waste of computation time.  
 Note: the ball's inertia tensor (e.g., solid or hollow sphere) does have an influence.
 
-### How to Randomize?
+### How to Randomize
 
 After deciding on which domain parameters we want to randomize, we must decide how to do this. Possible approaches are:
 
@@ -77,16 +92,20 @@ However, all of these algorithms lack a measure of the policy's transferability 
 [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf) presented an algorithm called Simulation-based PolicyOptimization with Transferability Assessment (SPOTA) which is able to directly transfer from an ensemble of source domains to an unseen target domain. The goal of SPOTA is not only to maximize the agent's expected discounted return under the influence of perturbed physics simulations, but also to provide an approximate probabilistic guarantee on the loss in terms of this performance mueasure when applying the found policy $\pi(\theta)$, a mapping from states to actions, to a different domain.
 
 We start by framing reinforcement learning problem as a _stochastic program_, i.e., maximizing the expectation of estimated discounted return $J(\theta)$ over the domain parameters $\xi \sim p(\xi; \psi)$, where $\psi$ are the parameters of the distribution
+
 $$
     J(\theta^{\star}) = \max_{\theta \in \Theta} \mathbb{E}_\xi \left[J(\theta, \xi) \right].
 $$
+
 Since it is intractable to compute the expectation over all domains, we approximate the stochastic program using $n$ samples
+
 $$
     \hat{J}_n(\theta^{\star}_n) = \max_{\theta \in \Theta} \frac{1}{n}\sum_{i=1}^{n} J(\theta, \xi_i).
 $$
 
 It has been shown under mild assumptions, which are fulfilled in the reinforcement leaning setting, that [sample-based optimization is optimistically biased](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/WR025i002p00152), i.e., the solution is guaranteed to degrade in terms of performance when transformed to the real system.
 This loss in performance can be expressed by the _Simulation Optimization Bias_ (SOB)
+
 $$
     \mathrm{b}\left[ \hat{J}_n(\theta^{\star}_n) \right] =
     \underbrace{
@@ -98,41 +117,48 @@ $$
     }_{\text{true optimal value}}
     \ge 0.
 $$
+
 The figure below qualitatively displays the SOB between the true optimum $J(\theta^\star)$ and the sample-based optimum $\hat{J}_n(\theta_n^\star)$. The shaded region visualizes the variance arising when approximating $J(\theta)$ with $n$ domains.
 
 <center>
-<img src="/assets/img/2019-02-28/SOB_sketch.png" width="60%">
+<img src="/assets/img/2019-02-28/SOB_sketch.png" width="55%">
 </center>
 
 Unfortunately, this quantity can not be used right away as an objective function, because we can not compute the expectation in the minuend, and we do not know the optimal policy parameters for the real system $\theta^\star$ in the subtrahend.  
 Inspired by the work of [Mak et al.](https://ac.els-cdn.com/S0167637798000546/1-s2.0-S0167637798000546-main.pdf?_tid=8f5399ae-fda8-41f9-b499-5991d943237c&acdnat=1550665775_b5dfa73c82228c19975ebbc882d775a7) on assessing the solution quality of convex stochastic problems, we employ the _Optimality Gap_ (OG) at the candidate solution $\theta^c$
+
 $$
     G(\theta^c) =
     \underbrace{\max_{\theta \in \Theta} \mathbb{E}_\xi \left[J(\theta, \xi) \right]}_{\text{best solution's value}} -
     \underbrace{\mathbb{E}_\xi \left[J(\theta^c, \xi) \right]}_{\text{candidate solution's value}}
     \ge 0
 $$
+
 to quantify how much our solution $\theta^c$, e.g. yielded by a policy search algorithm, is worse than the best solution the algorithm could have found. In general, this measure is agnostic to the fact if we are evaluating the policies in simulation or reality. Since we are discussing the sim-2-real setting, think of OG as a quantification of our solutions suboptimality in simulation.  
 However, computing $G(\theta^c)$ also includes an expectation over all domains. Thus, we have to approximate it from samples. Using $n$ domains, the estimated OG at our candidate solution is
+
 $$
     \hat{G}_n(\theta^c) = \max_{\theta\in\Theta} \hat{J}_n(\theta) - \hat{J}_n(\theta^c) \ge G(\theta^c).
 $$
-In SPOTA, an upper confidence bound on $\hat{G}_n(\theta^c)$ is used to give a probabilistic guarantee on the transferability of the policy learned in simulation. So, the results is a policy that with probability $X$ does not lose more than $Y$ in terms of return when transferred from one domain to a different domain of the same source distribution $p(\xi; \psi)$.  
-Essentially, SPOTA increases the number of domains for every iteration until the policy's upper confidence bound on the estimated OG is lower than the desired threshold $Y$.  
+
+In SPOTA, an upper confidence bound on $\hat{G}_n(\theta^c)$ is used to give a probabilistic guarantee on the transferability of the policy learned in simulation. So, the results is a policy that with probability $(1-\alpha)$ does not lose more than $\beta$ in terms of return when transferred from one domain to a different domain of the same source distribution $p(\xi; \psi)$.  
+Essentially, SPOTA increases the number of domains for every iteration until the policy's upper confidence bound on the estimated OG is lower than the desired threshold $\beta$.  
 
 Let's assume everything worked out fine and we trained a policy from randomized simulations such that the upper confidence bound on $\hat{G}_n(\theta^c)$ was reduced below the desired threshold.
 Now, the key question is if this property actually contributes to our goal of obtaining a low Simulation Optimization Bias (SOB).  
 The relation between the OG and and the SOB can be written as
+
 $$
     \mathrm{b}\left[ \hat{J}_n(\theta^{\star}_n) \right] = \mathbb{E}_\xi \left[ \hat{G}_n(\theta^c) \right]- G(\theta^c)
 $$
+
 where in this case the evaluation is performed in the real world.<!-- where in this case $G(\theta^c)$ is evaluated in the real world. -->
 Therefore, lowering the upper confidence bound on the estimated OG $\hat{G}_n(\theta^c)$ contributes to lowering the SOB $\mathrm{b}\left[ \hat{J}_n(\theta^{\star}_n) \right]$.
 
 > Please note, that the terminology used in this post deviates sightly from the one used in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf).
 
 ### SPOTA &mdash; Sim-2-Sim Results 
-Preliminary results on transferring policies trained with SPOTA from one simulation to another have been reported in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf). The videos below show the performance in example scenarios side-by-side with **3 baselines**:
+Preceding results on transferring policies trained with SPOTA from one simulation to another have been reported in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf). The videos below show the performance in example scenarios side-by-side with **3 baselines**:
 
 * **EPOpt** by [Rajeswaran et al.](https://arxiv.org/pdf/1610.01283.pdf) which is a domain ranomization algorithm that maximizes the [conditional value at risk](https://en.wikipedia.org/wiki/Expected_shortfall) of the expected discounted return
 * **TRPO** without domain randomization (implementation from [Duan et al.](https://arxiv.org/pdf/1604.06778.pdf))
@@ -152,7 +178,7 @@ Preliminary results on transferring policies trained with SPOTA from one simulat
 
 ## Authors
 
-[Fabio Muratore](https://www.ias.informatik.tu-darmstadt.de/Team/FabioMuratore) &mdash; 	Intelligent Autonomous Systems, TU Darmstadt, Germany
+[Fabio Muratore](https://www.ias.informatik.tu-darmstadt.de/Team/FabioMuratore) &mdash; Intelligent Autonomous Systems, TU Darmstadt, Germany
 
 ## Acknowledgements
 
