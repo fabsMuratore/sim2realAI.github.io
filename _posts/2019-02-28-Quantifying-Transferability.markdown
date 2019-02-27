@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Quantifying the Transferability of Control Policies Learned Using Domain Randomization"
+title: "Quantifying the Transferability of Sim-2-Real Control Policies"
 date: 2019-02-21 12:00:00 +0100
 description: On the simulation optimization bias and the optimality gap in the context of reinforcement learning # Add post description (optional)
 img:  # Add image post (optional)
@@ -21,7 +21,7 @@ img:  # Add image post (optional)
 <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
 
-This post is about how we can quantitatively estimate the transferability of a control policies learned in a randomized simulation.
+This post is about how we can quantitatively estimate the transferability of a control policy learned from randomized simulations.
 
 Learning continuous control policies in the real world is expensive in terms of time (e.g., gathering the data) and resources (e.g., wear and tear on the robot).
 Therefore, simulation-based policy search appears to be an appealing alternative.
@@ -41,16 +41,16 @@ The authors showed that by adding noise to the sensors and actors while training
 
 One possibility to tackle the challenges mentioned in the previous section is by randomizing the simulations. The most prominent recent success using domain randomization is the robotic in-hand manipulation of physical objects, described in a [blog post from OpenAI](https://blog.openai.com/learning-dexterity/).
 
-A _domain_ is one instance of the simulator, i.e., a set of _domain parameters_ describes the current world our robot is living in. Basically, domain parameters are the quantities that we use to parametrize the simulation. This can be physics parameters like the mass and extents of an object, as well as the simulation's time step size, or visual features like textures camera positions.
+A _domain_ is one instance of the simulator, i.e., a set of _domain parameters_ describes the current world our robot is living in. Basically, domain parameters are the quantities that we use to parametrize the simulation. This can be physics parameters like the mass and extents of an object, as well as a gearbox's efficiency, or visual features like textures camera positions.
 
 Loosely speaking, randomizing the physics parameters can be interpreted as another way of injecting noise into the simulation while learning. In contrast to simply adding noise to the sensors and actors, this approach allows to selectively express the uncertainty on one phenomenon (e.g., rolling friction).  
 **The motivation of domain randomization in the context of learning from simulations** is the idea that if the learner has seen many variations of the domain, then the resulting policy will be more robust towards modeling uncertainties and errors. Furthermore, if the learned policy is able to maintain its performance across an ensemble of domains, it is more like to transferable to the real world.
 
 ### What to Randomize
 
-<img align="right" src="/assets/img/2019-02-28/Tobin_etal_2018--sim2real.jpg" width="50%">
+<img align="right" src="/assets/img/2019-02-28/Tobin_etal_2018--sim2real.jpg" width="36%" hspace="30px">
 
-A lot of research in the sim-2-real field has been focused on randomizing visual features (e.g., textures, camera properties, or lighting). Examples are the work of [Tobin et al.](https://arxiv.org/pdf/1703.06907.pdf), who trained an object detector for robot grasping (see figure), or the research done by [Sadeghi and Levine](https://arxiv.org/pdf/1611.04201.pdf), where a drone learned to fly from experience gathered in visually randomized environments.
+A lot of research in the sim-2-real field has been focused on randomizing visual features (e.g., textures, camera properties, or lighting). Examples are the work of [Tobin et al.](https://arxiv.org/pdf/1703.06907.pdf), who trained an object detector for robot grasping (see figure to the right), or the research done by [Sadeghi and Levine](https://arxiv.org/pdf/1611.04201.pdf), where a drone learned to fly from experience gathered in visually randomized environments.
 
 In this blog post, we focus on the randomization of physics parameters (e.g., masses, centers of mass, friction coefficients, or actuator delays), which change the dynamics of the system at hand.
 Depending on the simulation environment, **the influence of some parameters can be crucial, while other can be neglected**.
@@ -71,8 +71,8 @@ After deciding on which domain parameters we want to randomize, we must decide h
    and [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf)
 
 2. **Sampling domain parameters from adaptive probability distributions**  
-   <img align="right" src="/assets/img/2019-02-28/Chebotar_etal_2018--adaptive_distr.png" width="37%">
-   [Chebotar et al.](https://arxiv.org/pdf/1810.05687.pdf) presented a very promising method on how to close the sim-2-real loop by adapting the distributions from which the domain parameters are sampled depending on results from real-world rollouts (see figure).
+   <img align="right" src="/assets/img/2019-02-28/Chebotar_etal_2018--adaptive_distr.png" width="39%" hspace="20px">
+   [Chebotar et al.](https://arxiv.org/pdf/1810.05687.pdf) presented a very promising method on how to close the sim-2-real loop by adapting the distributions from which the domain parameters are sampled depending on results from real-world rollouts (see figure to the right).
    The main advantage is, that this approach alleviates the need for hand-tuning the distributions of the domain parameters, which is currently a significant part of the hyper-parameter search. On the other side, the adaptation requires data from the real robot which expensive.
    For this reason, we will only focus on methods that sample from static probability distributions.
 
@@ -90,7 +90,7 @@ I see two reasons, why the community so far only randomizes once per rollout. Fi
 In the state-of-the-art of sim-2-real reinforcement learning, there are several algorithms which learn (robust) continuous control policies in simulation. Some of them already showed the ability to transfer from simulation to reality.
 However, all of these algorithms lack a measure of the policy's transferability and thus they just train for a given number of rollouts or transitions. Usually, this problem is bypassed by training for a "very long time" (i.e., using a "huge amount" of samples) and then testing the resulting policy on the real system. If the performance is not satisfactory, the procedure is repeated.
 
-[Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf) presented an algorithm called Simulation-based PolicyOptimization with Transferability Assessment (SPOTA) which is able to directly transfer from an ensemble of source domains to an unseen target domain. The goal of SPOTA is not only to maximize the agent's expected discounted return under the influence of perturbed physics simulations, but also to provide an approximate probabilistic guarantee on the loss in terms of this performance mueasure when applying the found policy $\pi(\theta)$, a mapping from states to actions, to a different domain.
+[Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf) presented an algorithm called Simulation-based Policy Optimization with Transferability Assessment (SPOTA) which is able to directly transfer from an ensemble of source domains to an unseen target domain. The goal of SPOTA is not only to maximize the agent's expected discounted return under the influence of perturbed physics simulations, but also to provide an approximate probabilistic guarantee on the loss in terms of this performance mueasure when applying the found policy $\pi(\theta)$, a mapping from states to actions, to a different domain.
 
 We start by framing reinforcement learning problem as a _stochastic program_, i.e., maximizing the expectation of estimated discounted return $J(\theta)$ over the domain parameters $\xi \sim p(\xi; \psi)$, where $\psi$ are the parameters of the distribution
 
@@ -177,13 +177,13 @@ Preceding results on transferring policies trained with SPOTA from one simulatio
 
 ---
 
-## Authors
+## Author
 
-[Fabio Muratore](https://www.ias.informatik.tu-darmstadt.de/Team/FabioMuratore) &mdash; Intelligent Autonomous Systems, TU Darmstadt, Germany
+[Fabio Muratore](https://www.ias.informatik.tu-darmstadt.de/Team/FabioMuratore) &mdash; Intelligent Autonomous Systems Group (TU Darmstadt) and Honda Research Institute Europe
 
 ## Acknowledgements
 
-I want to thank Ankur Handa for proofreading and editing this post.
+I want to thank Michael Gienger for proofreading and Ankur Handa editing this post.
 
 ## Credits
 
