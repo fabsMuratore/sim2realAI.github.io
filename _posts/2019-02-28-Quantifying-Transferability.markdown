@@ -158,7 +158,8 @@ Therefore, lowering the upper confidence bound on the estimated OG $\hat{G}_n(\t
 
 > Please note, that the terminology used in this post deviates sightly from the one used in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf).
 
-### SPOTA &mdash; Sim-2-Sim Results 
+### SPOTA &mdash; Sim-2-Sim Results
+
 Preceding results on transferring policies trained with SPOTA from one simulation to another have been reported in [Muratore et al.](https://www.ias.informatik.tu-darmstadt.de/uploads/Team/FabioMuratore/Muratore_Treede_Gienger_Peters--SPOTA_CoRL2018.pdf). The videos below show the performance in example scenarios side-by-side with **3 baselines**:
 
 * **EPOpt** by [Rajeswaran et al.](https://arxiv.org/pdf/1610.01283.pdf) which is a domain ranomization algorithm that maximizes the [conditional value at risk](https://en.wikipedia.org/wiki/Expected_shortfall) of the expected discounted return
@@ -173,7 +174,31 @@ Preceding results on transferring policies trained with SPOTA from one simulatio
 
 ### SPOTA &mdash; Sim-2-Real Results
 
-... TBD ...
+Finally, early results acquired on the [2 DoF Ball Balancer from Quanser](https://www.quanser.com/products/2-dof-ball-balancer/).
+
+Assume we obtained an analytical model of the dynamics and determined the parameters with some imperfections (e.g., the characteristics of the servo motors from the data sheet do not match the reality).
+
+In the first experiment, we investigate what happens if we train control policies on a slightly faulty simulator using a model-free reinforcement learning algorithm called Proximal Policy Optimization (PPO).  
+**left**: a policy learned with PPO on a simulator with larger ball and larger plate; tested on the nominal system  
+**right**: another policy learned with PPO on a simulator with higher motor as well as gear box efficiency; tested on the nominal system  
+<center>
+<video width="301" src="/assets/vid/2019-02-28/HC_trn_domain1_stabilizing.mov" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen muted loop controls></video>
+
+<video width="301" src="/assets/vid/2019-02-28/HC_trn_domain2_stabilizing.mov" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen muted loop controls></video>
+</center>
+
+<br>
+In the second experiment, we test policies trained using SPOTA, i.e., a randomized simulator.  
+**left**: a policy learned with SPOTA; tested on the nominal system  
+**right**: the same policy learned with SPOTA; tested with a modified ball (the ball was cut open and filled with paper, the remaining glue makes the ball roll uneven)
+<center>
+<video width="301" src="/assets/vid/2019-02-28/SPOTA_nominal_stabilizing.mov" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen muted loop controls></video>
+
+<video width="301" src="/assets/vid/2019-02-28/SPOTA_heavier_ball_stablilizing.mov" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen muted loop controls></video>
+</center>
+
+> Disclaimer: despite a dead band in the servo motors' voltage commands, noisy velocity signals from the ball detection, and (minor) nonlinearities in the dynamics this problem can also be solve by tuning the gains of a PD-controller while executing real-world trails.  
+Furthermore, after a careful parameter estimation, we are able to learn the nominal system in simulation using PPO. However, the resulting policy is sensitive to model uncertainties (e.g., testing with a different ball).
 
 ---
 
@@ -183,9 +208,9 @@ Preceding results on transferring policies trained with SPOTA from one simulatio
 
 ## Acknowledgements
 
-I want to thank Michael Gienger for proofreading and Ankur Handa editing this post.
+I want to thank Ankur Handa editing, and Michael Gienger for proofreading this post.
 
 ## Credits
 
-First figure with permission from Josh Tobin  
-Second figure with permission from Yevgen Chebotar
+First figure with permission from Josh Tobin [(source)](https://arxiv.org/pdf/1703.06907.pdf)  
+Second figure with permission from Yevgen Chebotar [(source)](https://arxiv.org/pdf/1810.05687.pdf)
