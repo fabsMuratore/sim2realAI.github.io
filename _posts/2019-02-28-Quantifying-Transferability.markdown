@@ -48,7 +48,7 @@ Loosely speaking, randomizing the physics parameters can be interpreted as anoth
 
 ### What to Randomize
 
-<img align="right" src="/assets/img/2019-02-28/Tobin_etal_2018--sim2real.jpg" width="36%" hspace="30px">
+<img align="right" src="/assets/img/2019-02-28/Tobin_etal_2018--sim2real.jpg" width="42%" hspace="20px">
 
 A lot of research in the sim-2-real field has been focused on randomizing visual features (e.g., textures, camera properties, or lighting). Examples are the work of [Tobin et al.](https://arxiv.org/pdf/1703.06907.pdf), who trained an object detector for robot grasping (see figure to the right), or the research done by [Sadeghi and Levine](https://arxiv.org/pdf/1611.04201.pdf), where a drone learned to fly from experience gathered in visually randomized environments.
 
@@ -174,13 +174,13 @@ Preceding results on transferring policies trained with SPOTA from one simulatio
 
 ### SPOTA &mdash; Sim-2-Real Results
 
-Finally, early results acquired on the [2 DoF Ball Balancer from Quanser](https://www.quanser.com/products/2-dof-ball-balancer/).
+Finally, I want to share some _early_  results acquired on the [2 DoF Ball Balancer from Quanser](https://www.quanser.com/products/2-dof-ball-balancer/). Here, the task is to stabilize a ball at the center of the plate. The device receives voltage commands for the two motors and yields measurements of the ball position (2D relative to the plate) as well as the motors' shaft positions (relative to the initial angle). Including the velocities derived from the position signals, the system has 2-dim continuous action space and a 8-dim continuous observation space.
 
 Assume we obtained an analytical model of the dynamics and determined the parameters with some imperfections (e.g., the characteristics of the servo motors from the data sheet do not match the reality).
 
 In the first experiment, we investigate what happens if we train control policies on a slightly faulty simulator using a model-free reinforcement learning algorithm called Proximal Policy Optimization (PPO).  
-**left**: a policy learned with PPO on a simulator with larger ball and larger plate; tested on the nominal system  
-**right**: another policy learned with PPO on a simulator with higher motor as well as gear box efficiency; tested on the nominal system  
+**left video**: a policy learned with PPO on a simulator with larger ball and larger plate&mdash; tested on the nominal system  
+**right video**: another policy learned with PPO on a simulator with higher motor as well as gear box efficiency&mdash; tested on the nominal system  
 <center>
 <video width="301" src="/assets/vid/2019-02-28/HC_trn_domain1_stabilizing.mov" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen muted loop controls></video>
 
@@ -188,17 +188,17 @@ In the first experiment, we investigate what happens if we train control policie
 </center>
 
 <br>
-In the second experiment, we test policies trained using SPOTA, i.e., a randomized simulator.  
-**left**: a policy learned with SPOTA; tested on the nominal system  
-**right**: the same policy learned with SPOTA; tested with a modified ball (the ball was cut open and filled with paper, the remaining glue makes the ball roll uneven)
+In the second experiment, we test policies trained using SPOTA, i.e., applying domain randomization.  
+**left video**: a policy learned with SPOTA&mdash; tested on the nominal system  
+**right video**: the same policy learned with SPOTA&mdash; tested with a modified ball (the ball was cut open and filled with paper, the remaining glue makes the ball roll uneven)
 <center>
 <video width="301" src="/assets/vid/2019-02-28/SPOTA_nominal_stabilizing.mov" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen muted loop controls></video>
 
 <video width="301" src="/assets/vid/2019-02-28/SPOTA_heavier_ball_stablilizing.mov" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen muted loop controls></video>
 </center>
 
-> Disclaimer: despite a dead band in the servo motors' voltage commands, noisy velocity signals from the ball detection, and (minor) nonlinearities in the dynamics this problem can also be solve by tuning the gains of a PD-controller while executing real-world trails.  
-Furthermore, after a careful parameter estimation, we are able to learn the nominal system in simulation using PPO. However, the resulting policy is sensitive to model uncertainties (e.g., testing with a different ball).
+> Disclaimer: despite a dead band in the servo motors' voltage commands, noisy velocity signals from the ball detection, and (minor) nonlinearities in the dynamics this stabilizing task can also be solve by tuning the gains of a PD-controller while executing real-world trails.  
+Furthermore, after a careful parameter estimation, we are able to learn this task for the nominal system in simulation using PPO. However, the resulting policy is sensitive to model uncertainties (e.g., testing with a different ball).
 
 ---
 
