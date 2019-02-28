@@ -174,13 +174,13 @@ Preceding results on transferring policies trained with SPOTA from one simulatio
 
 ### SPOTA &mdash; Sim-2-Real Results
 
-Finally, I want to share some _early_  results acquired on the [2 DoF Ball Balancer from Quanser](https://www.quanser.com/products/2-dof-ball-balancer/). Here, the task is to stabilize a ball at the center of the plate. The device receives voltage commands for the two motors and yields measurements of the ball position (2D relative to the plate) as well as the motors' shaft positions (relative to the initial angle). Including the velocities derived from the position signals, the system has 2-dim continuous action space and a 8-dim continuous observation space.
+Finally, I want to share some _early_  results acquired on the [2 DoF Ball Balancer from Quanser](https://www.quanser.com/products/2-dof-ball-balancer/). Here, the task is to stabilize a ball at the center of the plate. The device receives voltage commands for the two motors and yields measurements of the ball position (2D relative to the plate) as well as the motors' shaft angular positions (relative to their initial position). Including the velocities derived from the position signals, the system has a 2-dim continuous action space and a 8-dim continuous observation space.
 
 Assume we obtained an analytical model of the dynamics and determined the parameters with some imperfections (e.g., the characteristics of the servo motors from the data sheet do not match the reality).
 
 In the first experiment, we investigate what happens if we train control policies on a slightly faulty simulator using a model-free reinforcement learning algorithm called Proximal Policy Optimization (PPO).  
-**left video**: a policy learned with PPO on a simulator with larger ball and larger plate&mdash; tested on the nominal system  
-**right video**: another policy learned with PPO on a simulator with higher motor as well as gear box efficiency&mdash; tested on the nominal system  
+**Left video**: a policy learned with PPO on a simulator with larger ball and larger plate&mdash; tested on the nominal system.  
+**Right video**: another policy learned with PPO on a simulator with higher motor as well as gear box efficiency&mdash; tested on the nominal system.  
 <center>
 <video width="301" src="/assets/vid/2019-02-28/HC_trn_domain1_stabilizing.mov" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen muted loop controls></video>
 
@@ -189,15 +189,15 @@ In the first experiment, we investigate what happens if we train control policie
 
 <br>
 In the second experiment, we test policies trained using SPOTA, i.e., applying domain randomization.  
-**left video**: a policy learned with SPOTA&mdash; tested on the nominal system  
-**right video**: the same policy learned with SPOTA&mdash; tested with a modified ball (the ball was cut open and filled with paper, the remaining glue makes the ball roll uneven)
+**Left video**: a policy learned with SPOTA&mdash; tested on the nominal system.  
+**Right video**: the same policy learned with SPOTA&mdash; tested with a modified ball (the ball was cut open and filled with paper, the remaining glue makes the ball roll unevenly).
 <center>
 <video width="301" src="/assets/vid/2019-02-28/SPOTA_nominal_stabilizing.mov" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen muted loop controls></video>
 
 <video width="301" src="/assets/vid/2019-02-28/SPOTA_heavier_ball_stablilizing.mov" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen muted loop controls></video>
 </center>
 
-> Disclaimer: despite a dead band in the servo motors' voltage commands, noisy velocity signals from the ball detection, and (minor) nonlinearities in the dynamics this stabilizing task can also be solve by tuning the gains of a PD-controller while executing real-world trails.  
+> Disclaimer: despite a dead band in the servo motors' voltage commands, noisy velocity signals from the ball detection, and (minor) nonlinearities in the dynamics this stabilizing task can also be solved by tuning the gains of a PD-controller while executing real-world trials.  
 Furthermore, after a careful parameter estimation, we are able to learn this task for the nominal system in simulation using PPO. However, the resulting policy is sensitive to model uncertainties (e.g., testing with a different ball).
 
 ---
