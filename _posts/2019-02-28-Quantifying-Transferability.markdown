@@ -73,7 +73,7 @@ After deciding on which domain parameters we want to randomize, we must decide h
 2. **Sampling domain parameters from adaptive probability distributions**  
    <img align="right" src="/assets/img/2019-02-28/Chebotar_etal_2018--adaptive_distr.png" width="39%" hspace="20px">
    [Chebotar et al.](https://arxiv.org/pdf/1810.05687.pdf) presented a very promising method on how to close the sim-2-real loop by adapting the distributions from which the domain parameters are sampled depending on results from real-world rollouts (see figure to the right).
-   The main advantage is, that this approach alleviates the need for hand-tuning the distributions of the domain parameters, which is currently a significant part of the hyper-parameter search. On the other side, the adaptation requires data from the real robot which expensive.
+   The main advantage is, that this approach alleviates the need for hand-tuning the distributions of the domain parameters, which is currently a significant part of the hyper-parameter search. On the other side, the adaptation requires data from the real robot which is expensive.
    For this reason, we will only focus on methods that sample from static probability distributions.
 
 3. **Applying adversarial perturbations**  
@@ -208,7 +208,7 @@ Furthermore, after a careful parameter estimation, we are able to learn this tas
 
 ## Acknowledgements
 
-I want to thank Ankur Handa editing, and Michael Gienger for proofreading this post.
+We want to thank Ankur Handa editing, and Michael Gienger for proofreading this post.
 
 ## Credits
 
